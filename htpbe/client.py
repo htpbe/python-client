@@ -138,15 +138,17 @@ class Client:
     def list_checks(
         self,
         limit: int = 100,
-        page: Optional[int] = None,
+        offset: int = 0,
         tool: Optional[str] = None,
         creator: Optional[str] = None,
         producer: Optional[str] = None,
     ) -> Dict[str, Any]:
-        """List your checks (paginated, most recent first)."""
-        params: Dict[str, Any] = {"limit": limit}
-        if page is not None:
-            params["page"] = page
+        """List your checks (most recent first).
+
+        Paginate with ``offset``: the response echoes ``limit``/``offset`` and a
+        ``has_more`` flag. For the next page, advance ``offset`` by ``limit``.
+        """
+        params: Dict[str, Any] = {"limit": limit, "offset": offset}
         if tool:
             params["tool"] = tool
         if creator:

@@ -6,4 +6,4 @@ https://htpbe.tech/api
 from .client import Client, HtpbeAPIError, HtpbeError
 
 __all__ = ["Client", "HtpbeError", "HtpbeAPIError"]
-__version__ = "0.1.0"
+__version__ = "0.2.0"

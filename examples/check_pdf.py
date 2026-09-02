@@ -2,6 +2,9 @@
 
     export HTPBE_API_KEY=htpbe_live_...
     python examples/check_pdf.py https://example.com/invoice.pdf
+
+Exit codes: 0 no action needed, 1 API error, 2 usage error,
+3 route to a human reviewer, 4 verify with the issuing organisation.
 """
 
 import os
@@ -33,11 +36,26 @@ def main() -> int:
     print(f"verdict: {status}")
     if markers:
         print(f"markers: {', '.join(markers)}")
-    # Reject documents that should be untouched institutional originals.
-    if status == "modified":
-        print("→ MODIFIED: request an untouched digital original.")
-        return 1
-    return 0
+
+    # A structural verdict describes the file, not the person who sent it, and is
+    # never safe as the sole basis for an automatic adverse decision. The API ships
+    # `usage_caution.recommended_action` on every result to route the case instead
+    # of auto-rejecting. Branch on it; only `no_action` is a clean pass. Anything
+    # else — including a missing or unrecognised action — routes to a human.
+    usage_caution = result.get("usage_caution") or {}
+    action = usage_caution.get("recommended_action")
+    message = usage_caution.get("message")
+    if message:
+        print(f"caution: {message}")
+
+    if action == "no_action":
+        return 0
+    if action == "request_from_issuer":
+        print("→ Verify this document directly with the issuing organisation.")
+        return 4
+    # route_to_human_review, or anything unexpected: fail safe to human review.
+    print("→ Route to a human reviewer before any decision.")
+    return 3
 
 
 if __name__ == "__main__":

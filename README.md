@@ -23,6 +23,17 @@ print(result["status"])               # "intact" | "modified" | "inconclusive"
 print(result["modification_markers"]) # e.g. ["HTPBE_POST_SIGNATURE_EDIT"]
 ```
 
+A structural verdict describes the file, not the person who sent it, so it is never safe as the sole basis for an automatic adverse decision. Every result ships a `usage_caution` guardrail — branch on `recommended_action` to route the case instead of auto-rejecting:
+
+```python
+action = result["usage_caution"]["recommended_action"]
+# "no_action"             → intact: no adverse action (still not a guarantee)
+# "route_to_human_review" → send to a human reviewer before any decision
+# "request_from_issuer"   → verify the document with the issuing organisation
+```
+
+See `examples/check_pdf.py` for a complete routing example.
+
 The API works on any **publicly accessible** PDF URL (≤ 10 MB), downloadable without authentication.
 
 ### Two-step flow
@@ -37,10 +48,15 @@ result = client.get_result(check_id)
 ### List your checks
 
 ```python
-page = client.list_checks(limit=50)
-for check in page["data"]:
-    print(check["id"], check["status"])
-print(page["total"])  # total number of checks
+offset = 0
+while True:
+    page = client.list_checks(limit=50, offset=offset)
+    for check in page["data"]:
+        print(check["id"], check["status"])
+    if not page["has_more"]:
+        break
+    offset += page["limit"]
+print(page["total"])  # total number of checks matching the filters
 ```
 
 ### Error handling
